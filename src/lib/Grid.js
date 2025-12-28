@@ -2,7 +2,7 @@ import BoundingBox from './BoundingBox.js';
 import {geoMercator} from 'd3-geo';
 
 /**
- * All roads in the area
+ * All roads/pistes/aerialways in the area
  */
 export default class Grid {
   constructor() {
@@ -72,6 +72,20 @@ export default class Grid {
         bounds.addPoint(element.lon, element.lat);
       } else if (element.type === 'way') {
         wayPointCount += element.nodes.length;
+
+        // Extract feature type and metadata for styling differentiation
+        const tags = element.tags || {};
+        if (tags['piste:type']) {
+          element.featureType = 'piste';
+          element.pisteType = tags['piste:type'];
+          element.difficulty = tags['piste:difficulty'] || 'unknown';
+        } else if (tags['aerialway']) {
+          element.featureType = 'aerialway';
+          element.aerialwayType = tags['aerialway'];
+        } else {
+          // Default for roads or untagged ways
+          element.featureType = 'road';
+        }
       }
     });
 
@@ -99,6 +113,15 @@ export default class Grid {
     this.elements.forEach(callback);
   }
 
+  /**
+   * Iterates over all ways, calling callback for each line segment.
+   * @param {Function} callback - Called with (from, to, element) for each segment
+   *   - from: {x, y} projected start point
+   *   - to: {x, y} projected end point
+   *   - element: the way element with featureType, difficulty, etc.
+   * @param {Function} enter - Optional, called when starting a new way
+   * @param {Function} exit - Optional, called when finishing a way
+   */
   forEachWay(callback, enter, exit) {
     let positions = this.nodes;
     let project = this.getProjector();
@@ -117,7 +140,8 @@ export default class Grid {
         if (!node) continue;
         let next = project(node);
 
-        callback(last, next);
+        // Pass element as third argument for access to featureType, difficulty, etc.
+        callback(last, next, element);
 
         last = next;
       }
