@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [vue(), visualizer({
   //  template: 'network'
   })],
-  base: '',
+  base: '/city-roads/',  // For GitHub Pages deployment
   server: {
     port: 8080
   },
