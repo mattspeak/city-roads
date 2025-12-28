@@ -43,8 +43,8 @@ Each piste will be rendered as a **solid line** in its standard difficulty color
 | `freeride` | 🟠 Orange | `#F97316` |
 | Unknown/untagged | ⚪ Gray | `#9CA3AF` |
 
-### Lifts/Aerialways: Grey Dotted Lines
-All mechanical lift infrastructure will be rendered as **grey dotted lines**:
+### Lifts/Aerialways: Solid Grey Lines
+All mechanical lift infrastructure will be rendered as **solid grey lines**:
 - Chair lifts, gondolas, cable cars
 - Drag lifts (t-bar, j-bar, platter)
 - Rope tows, magic carpets
@@ -52,16 +52,15 @@ All mechanical lift infrastructure will be rendered as **grey dotted lines**:
 **Default lift color**: `#6B7280` (neutral grey)
 
 This approach:
-- Matches international ski map conventions
 - Makes difficulty immediately visible at a glance
-- Clearly distinguishes pistes from lifts
+- Clearly distinguishes pistes from lifts via color contrast
+- Uses existing rendering capabilities (no custom shaders needed)
 - Provides familiar visual language for skiers
 
 ### ⚠️ CHALLENGES
 
 | Challenge | Severity | Notes |
 |-----------|----------|-------|
-| Dotted lines for aerialways | Medium | `w-gl` library doesn't natively support dashed/stipple lines. WebGL deprecated `glLineStipple`. Custom implementation needed. |
 | Search by ski resort | Low | Nominatim can find ski resorts, but results may be less refined than city boundaries. May need to use `landuse=winter_sports` areas. |
 | No pre-built cache | Low | The existing S3 cache is for roads only. Ski queries will always hit Overpass API (which is acceptable). |
 | Multiple feature types | Low | Need to differentiate pistes from aerialways for styling. Current Grid.js doesn't preserve way tags. |
@@ -83,17 +82,19 @@ This approach:
 
 ### Aerialway Types (`aerialway=*`)
 
-| Value | Description | Suggested Style |
-|-------|-------------|-----------------|
-| `chair_lift` | Open chairlift | Dotted line |
-| `gondola` | Enclosed cabin lift | Dotted line |
-| `cable_car` | Large aerial tramway | Dotted line |
-| `drag_lift` | Generic drag lift | Dotted line |
-| `t-bar` | T-bar surface lift | Dotted line |
-| `j-bar` | J-bar surface lift | Dotted line |
-| `platter` | Button/platter lift | Dotted line |
-| `rope_tow` | Rope tow lift | Dotted line |
-| `magic_carpet` | Conveyor belt lift | Dotted line |
+| Value | Description |
+|-------|-------------|
+| `chair_lift` | Open chairlift |
+| `gondola` | Enclosed cabin lift |
+| `cable_car` | Large aerial tramway |
+| `drag_lift` | Generic drag lift |
+| `t-bar` | T-bar surface lift |
+| `j-bar` | J-bar surface lift |
+| `platter` | Button/platter lift |
+| `rope_tow` | Rope tow lift |
+| `magic_carpet` | Conveyor belt lift |
+
+All aerialway types rendered as **solid grey lines** (`#6B7280`).
 
 ### Piste Difficulty (`piste:difficulty=*`)
 
@@ -222,7 +223,7 @@ const pisteCollections = {
 };
 ```
 
-**Aerialway Collection (grey dotted lines):**
+**Aerialway Collection (solid grey lines):**
 ```javascript
 const aerialwayCollection = new WireCollection(count, { width: 1.5 }); // Grey
 ```
@@ -234,48 +235,7 @@ Each collection gets its designated color from the difficulty color scheme.
 
 ---
 
-#### Task 3.2: Implement Dotted Lines for Aerialways
-**Files**: `src/lib/GridLayer.js`, potentially new shader files
-
-**Challenge**: The `w-gl` library's `WireCollection` only supports solid lines. WebGL does not have native line stipple support.
-
-**Options**:
-
-| Option | Pros | Cons |
-|--------|------|------|
-| **A. Simulated dots** - Draw many short line segments with gaps | Simple, uses existing WireCollection | Performance impact with many segments |
-| **B. Custom shader** - Modify w-gl or add custom shader | Best visual quality, performant | Requires WebGL shader knowledge, more complex |
-| **C. Marker approach** - Place dot symbols along the line | Distinctive appearance | May look cluttered, performance concerns |
-| **D. Different visual** - Use different color/opacity instead of dots | Simplest to implement | Doesn't match traditional ski map conventions |
-
-**Recommended approach**: Start with **Option A** (simulated dots) for initial implementation, then consider **Option B** (custom shader) for optimization if needed.
-
-**Simulated dot algorithm**:
-```javascript
-// For each aerialway segment (from, to):
-const distance = Math.hypot(to.x - from.x, to.y - from.y);
-const dotLength = 5;   // pixels
-const gapLength = 5;   // pixels
-const segmentLength = dotLength + gapLength;
-const numSegments = Math.floor(distance / segmentLength);
-
-for (let i = 0; i < numSegments; i++) {
-  const startRatio = (i * segmentLength) / distance;
-  const endRatio = (i * segmentLength + dotLength) / distance;
-
-  const dotFrom = lerp(from, to, startRatio);
-  const dotTo = lerp(from, to, endRatio);
-
-  lines.add({ from: dotFrom, to: dotTo });
-}
-```
-
-**Complexity**: Medium-High
-**Risk**: Medium (performance and visual quality unknowns)
-
----
-
-#### Task 3.3: Apply Difficulty Colors to Collections
+#### Task 3.2: Apply Difficulty Colors to Collections
 **File**: `src/lib/GridLayer.js`
 
 Apply the standard ski map colors to each piste collection:
@@ -376,7 +336,7 @@ A legend explaining the color scheme:
 │  ───── Red     Intermediate │
 │  ───── Black   Advanced     │
 │  ───── Orange  Freeride     │
-│  · · · Grey    Lifts        │
+│  ───── Grey    Lifts        │
 └─────────────────────────────┘
 ```
 
@@ -482,39 +442,29 @@ Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright
 | 2 | 2 | Grid data structure updates (2.1, 2.2) | 1-2 hours |
 | 3 | 5 | Configuration - difficulty colors & defaults (5.1) | 1 hour |
 | 4 | 3 | Difficulty-based collections (3.1) | 2-3 hours |
-| 5 | 3 | Apply difficulty colors (3.3) | 1-2 hours |
-| 6 | 3 | Grey dotted lines for lifts (3.2) | 4-8 hours |
-| 7 | 4 | UI text/branding updates (4.1) | 1-2 hours |
-| 8 | 5 | Disable cache for ski queries (5.2) | 0.5 hours |
-| 9 | 4 | Color picker updates for all difficulty levels (4.3) | 2-3 hours |
-| 10 | 6 | Export updates (6.1, 6.2) | 2-3 hours |
-| 11 | 4 | Legend component (4.4) | 2-3 hours |
-| 12 | 4 | Search improvements (4.2) | 2-3 hours |
+| 5 | 3 | Apply difficulty colors (3.2) | 1-2 hours |
+| 6 | 4 | UI text/branding updates (4.1) | 1-2 hours |
+| 7 | 5 | Disable cache for ski queries (5.2) | 0.5 hours |
+| 8 | 4 | Color picker updates for all difficulty levels (4.3) | 2-3 hours |
+| 9 | 6 | Export updates (6.1, 6.2) | 2-3 hours |
+| 10 | 4 | Legend component (4.4) | 2-3 hours |
+| 11 | 4 | Search improvements (4.2) | 2-3 hours |
 
-**Estimated Total Effort**: 20-35 hours
+**Estimated Total Effort**: 15-25 hours
 
 ### Core Feature Summary
-The **minimum viable product** requires tasks 1-7:
-- Difficulty-colored pistes (green/blue/red/black)
-- Grey dotted lines for all lifts
+The **minimum viable product** requires tasks 1-6:
+- Difficulty-colored pistes (green/blue/red/black/orange)
+- Solid grey lines for all lifts
 - Updated branding
 
-Tasks 8-12 are enhancements that improve the user experience.
+Tasks 7-11 are enhancements that improve the user experience.
 
 ---
 
 ## Technical Risks and Mitigations
 
-### Risk 1: Dotted Line Performance
-**Risk**: Simulating dots with many short line segments could impact rendering performance for large ski resorts.
-
-**Mitigation**:
-- Start with moderate dot/gap ratios
-- Profile performance with real-world data
-- Consider LOD (level of detail) - use solid lines when zoomed out
-- Fall back to custom shader if needed
-
-### Risk 2: Ski Resort Boundaries
+### Risk 1: Ski Resort Boundaries
 **Risk**: Unlike cities, ski resorts may not have well-defined administrative boundaries in OSM.
 
 **Mitigation**:
@@ -522,7 +472,7 @@ Tasks 8-12 are enhancements that improve the user experience.
 - Search for `landuse=winter_sports` areas
 - Allow manual coordinate/bounding box input
 
-### Risk 3: Mixed Data Quality
+### Risk 2: Mixed Data Quality
 **Risk**: OSM ski data quality varies significantly by region. Some resorts have excellent coverage, others have minimal data.
 
 **Mitigation**:
@@ -587,17 +537,19 @@ out skel qt;
 
 ## Conclusion
 
-Adapting city-roads for ski mapping is **technically feasible** with moderate effort.
+Adapting city-roads for ski mapping is **technically straightforward** with low-to-moderate effort.
 
 ### Primary Approach
 - **Pistes colored by difficulty**: Green (novice), Blue (easy), Red (intermediate), Black (advanced), Orange (freeride)
-- **Lifts as grey dotted lines**: All aerialways rendered in neutral grey with dotted line style
+- **Lifts as solid grey lines**: All aerialways rendered in neutral grey
 
-### Key Challenges
-1. **Dotted lines for lifts** - Requires either simulating dots with short line segments or implementing a custom WebGL shader
-2. **Multiple WireCollections** - Need one per difficulty level plus one for lifts
+### Why This is Low Risk
+- **No custom shaders needed** - Uses existing `WireCollection` for all lines
+- **Proven architecture** - Just creating multiple collections with different colors
+- **Clean separation of concerns** - Query → Grid → GridLayer → Scene makes modifications straightforward
+- **Existing patterns** - The codebase already supports multiple layers with different colors
 
-### Why This Will Work
-The application's clean architecture with separation of concerns (Query → Grid → GridLayer → Scene) makes it well-suited for this adaptation. The existing multi-layer support and color customization UI provide a solid foundation for the difficulty-based color scheme.
+### Estimated Effort: 15-25 hours
+The main work is creating separate `WireCollection` instances per difficulty level and updating the UI. All rendering uses existing capabilities.
 
 The result will be a familiar, intuitive ski map visualization that any skier can immediately understand.
