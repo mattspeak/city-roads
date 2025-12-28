@@ -74,10 +74,19 @@ export default class LoadOptions {
       .then(bounds => {
         let queryString;
         if (bounds.areaId) {
+          // Apply area filter to each way statement in compound queries
+          // e.g., "way[a]; way[b]" becomes "way[a](area.area); way[b](area.area)"
+          let wayFilterWithArea = this.wayFilter
+            .split(';')
+            .map(f => f.trim())
+            .filter(f => f.length > 0)
+            .map(f => `${f}(area.area)`)
+            .join('; ');
+
           queryString = `[timeout:${this.timeout}][maxsize:${this.maxHeapByteSize}][out:json];
 area(${bounds.areaId});
 (._; )->.area;
-(${this.wayFilter}(area.area); node(w););
+(${wayFilterWithArea}; node(w););
 out ${this.outputMethod};`;
         } else if (bounds.bbox) {
           let bbox = serializeBBox(bounds.bbox);

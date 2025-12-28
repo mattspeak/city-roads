@@ -28,6 +28,32 @@ export default class Query {
    */
   static RoadStrict = 'way[highway~"^(((motorway|trunk|primary|secondary|tertiary)(_link)?)|unclassified|residential|living_street|pedestrian|service|track)$"][area!=yes]';
 
+  /**
+   * All ski pistes (downhill, nordic, skitour, sled, etc.)
+   */
+  static Piste = 'way["piste:type"]';
+
+  /**
+   * Downhill ski runs only
+   */
+  static PisteDownhill = 'way["piste:type"="downhill"]';
+
+  /**
+   * Nordic/cross-country ski trails only
+   */
+  static PisteNordic = 'way["piste:type"="nordic"]';
+
+  /**
+   * All aerialways (chairlifts, gondolas, cable cars, drag lifts, etc.)
+   */
+  static Aerialway = 'way["aerialway"]';
+
+  /**
+   * Combined query for all ski infrastructure (pistes + lifts)
+   * This is the primary filter for ski resort mapping.
+   */
+  static SkiAll = 'way["piste:type"]; way["aerialway"]';
+
   static runFromOptions(loadOptions, progress) {
     return loadOptions.getQueryTemplate().then(boundedQuery => {
       let q = new Query(boundedQuery, progress);
