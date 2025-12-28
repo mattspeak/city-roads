@@ -187,18 +187,9 @@ export default {
     pickSuggestion(suggestion) {
       this.lastSuggestion = suggestion;
       this.error = false;
-      if (appState.isCacheEnabled() && suggestion.areaId) {
-        this.checkCache(suggestion)
-          .catch(error => {
-            if (error.cancelled) return; // no need to do anything. They've cancelled
-
-            // No Cache - fallback
-            return this.useOSM(suggestion);
-          });
-      } else {
-        // we don't have cache for nodes yet.
-        this.useOSM(suggestion);
-      }
+      // Skip cache - it only contains road data, not ski data
+      // Always query OSM directly for ski features
+      this.useOSM(suggestion);
     },
 
     restartLoadingMonitor() {
@@ -229,11 +220,11 @@ export default {
 
     useOSM(suggestion) {
       this.loading = 'Connecting to OpenStreetMap...'
-      
-      // it may take a while to load data. 
+
+      // it may take a while to load data.
       this.restartLoadingMonitor();
       Query.runFromOptions(new LoadOptions({
-        wayFilter: Query.Road,
+        wayFilter: Query.SkiAll,
         areaId: suggestion.areaId,
         bbox: suggestion.bbox
       }), this.generateNewProgressToken())

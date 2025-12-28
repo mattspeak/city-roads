@@ -54,7 +54,9 @@ export default class LoadOptions {
     this.wayFilter = undefined;
     this.timeout = 900;
     this.maxHeapByteSize = 1073741824;
-    this.outputMethod = 'skel'; // body
+    // Use 'body' to get tags (needed for piste:type, piste:difficulty, aerialway)
+    // 'skel' is faster but doesn't include tags
+    this.outputMethod = 'body';
     Object.assign(this, overrides);
   }
 
